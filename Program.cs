@@ -119,46 +119,83 @@ namespace Terraria_Server
 
             while (enabled)
             {
-                bytesRead = 0;
+                bool finished = false;
+                bool error = false;
+                while (!finished)
+                {
+                    bytesRead = 0;
+                    message = new byte[4096];
+                    try
+                    {
+                        //blocks until a client sends a message
+                        bytesRead = clientStream.Read(message, 0, message.Length);
+                    }
+                    catch
+                    {
+                        //a socket error has occured
+                        error = true;
+                        break;
+                    }
 
-                try
-                {
-                    //blocks until a client sends a message
-                    bytesRead = clientStream.Read(message, 0, message.Length);
+                    if (bytesRead == 0)
+                    {
+                        //the client has disconnected from the server
+                        error = true;
+                        break;
+                    }
+                  //  ProgramLog.Log("read from client");
+                    //message has successfully been received
+
+                 //   string numbers = "";
+                 //   for (int j = 0; j < message[0] + 4; j++)
+                 //   {
+                 //       string s = Convert.ToString(message[j], 16);
+                 //       numbers = numbers + " " + s;
+                 //   }
+                 //   ProgramLog.Log(numbers);
+
+                    //accept connection after first read
+                    if (message[4] == 0x01)
+                    {
+                        byte[] accept = { 0x02, 0x00, 0x00, 0x00, 0x03, 0x05 };
+
+                        clientStream.Write(accept, 0, accept.Length);
+                        clientStream.Flush();
+                       // ProgramLog.Log("write to client");
+                    }
+
+                    if (message[4] == 0x04)
+                    {
+                        // parses the player info to get the player's name
+                        ASCIIEncoding en = new ASCIIEncoding();
+                        string name = en.GetString(message, 30, ((message[0] + 4) - 30));
+                        ProgramLog.Log(name + " tried to join.");
+                    }
+
+                    // client send request for world info, so we are done reading
+                    if (message[4] == 0x06)
+                    {
+                        // kick the client
+                        ASCIIEncoding asen = new ASCIIEncoding();
+                        byte[] down = asen.GetBytes(mmessage);
+
+                        byte[] buffer2 = { (byte)(down.Length + 1), 0x00, 0x00, 0x00, 0x02 };
+
+                        byte[] msg = new byte[down.Length + 5];
+                        Array.Copy(buffer2, 0, msg, 0, 5);
+                        Array.Copy(down, 0, msg, 5, down.Length);
+                        clientStream.Write(msg, 0, msg.Length);
+                        clientStream.Flush();
+                       // ProgramLog.Log("write to client");
+
+                        finished = true;
+                    }
+
                 }
-                catch
-                {
-                    //a socket error has occured
+
+                if (error)
                     break;
-                }
 
-                if (bytesRead == 0)
-                {
-                    //the client has disconnected from the server
-                    break;
-                }
-               // ProgramLog.Log("read from client");
-                //message has successfully been received
-
-              //  string numbers = "";
-              //  for (int i = 0; i < message[0]+4; i++ )
-              //  {
-              //      string s = Convert.ToString(message[i], 16);
-               //     numbers = numbers + " " + s;
-              //  }
-              //  ProgramLog.Log(numbers);
-
-                ASCIIEncoding asen = new ASCIIEncoding();
-                byte[] down = asen.GetBytes(mmessage);
-
-                byte[] buffer2 = { (byte)(down.Length+1), 0x00, 0x00, 0x00, 0x02 };
-
-                byte[] msg = new byte[down.Length + 5];
-                Array.Copy(buffer2, 0, msg, 0, 5);
-                Array.Copy(down, 0, msg, 5, down.Length);
-                clientStream.Write(msg, 0, msg.Length);
-                clientStream.Flush();
-              //  ProgramLog.Log("write to client");
             }
             value = DateTime.UtcNow;
             time = value.ToString("yyyy/MM/dd HH:mm:ss");
