@@ -155,35 +155,35 @@ namespace Terraria_Server
                  //   ProgramLog.Log(numbers);
 
                     //accept connection after first read
-                    if (message[4] == 0x01)
+                    if (message[2] == 0x01) //connection request from client
                     {
-                        byte[] accept = { 0x02, 0x00, 0x00, 0x00, 0x03, 0x05 };
+                        byte[] accept = { 0x04, 0x00, 0x03, 0x00 };
 
                         clientStream.Write(accept, 0, accept.Length);
                         clientStream.Flush();
                        // ProgramLog.Log("write to client");
                     }
 
-                    if (message[4] == 0x04)
+                    if (message[2] == 0x04)
                     {
                         // parses the player info to get the player's name
                         ASCIIEncoding en = new ASCIIEncoding();
-                        string name = en.GetString(message, 30, ((message[0] + 4) - 30));
+                        string name = en.GetString(message, 7, message[6]);
                         ProgramLog.Log(name + " tried to join.");
                     }
 
                     // client send request for world info, so we are done reading
-                    if (message[4] == 0x06)
+                    if (message[2] == 0x06)
                     {
                         // kick the client
                         ASCIIEncoding asen = new ASCIIEncoding();
                         byte[] down = asen.GetBytes(mmessage);
 
-                        byte[] buffer2 = { (byte)(down.Length + 1), 0x00, 0x00, 0x00, 0x02 };
+                        byte[] buffer2 = { (byte)(down.Length + 1), 0x00, 0x02, (byte)down.Length };
 
-                        byte[] msg = new byte[down.Length + 5];
-                        Array.Copy(buffer2, 0, msg, 0, 5);
-                        Array.Copy(down, 0, msg, 5, down.Length);
+                        byte[] msg = new byte[down.Length + 4];
+                        Array.Copy(buffer2, 0, msg, 0, 4);
+                        Array.Copy(down, 0, msg, 4, down.Length);
                         clientStream.Write(msg, 0, msg.Length);
                         clientStream.Flush();
                        // ProgramLog.Log("write to client");
