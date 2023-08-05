@@ -177,7 +177,9 @@ namespace Terraria_Server
                     {
                         // kick the client
                         ASCIIEncoding asen = new ASCIIEncoding();
-                        byte[] down = asen.GetBytes(mmessage);
+                        //UnicodeEncoding uen = new UnicodeEncoding();
+                        //byte[] down = uen.GetBytes(mmessage);
+                        byte[] down = asen.GetBytes("*"+mmessage+"\n");
 
                         byte[] buffer2 = { (byte)(down.Length + 1), 0x00, 0x02, (byte)down.Length };
 
